@@ -4,7 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Widget Espacial Notion</title>
-
 <style>
   body {
     margin: 0;
@@ -85,24 +84,20 @@
 </head>
 
 <body>
-<div class="widget">
-  <div class="title">🌌 Racha Cósmica</div>
+  <div class="widget">
+    <div class="title">🌌 Racha Cósmica</div>
 
-  <div class="racha-container" id="rachaDisplay">
-    0 🔥
+    <div class="racha-container" id="rachaDisplay">0 🔥</div>
+    <div class="ultima-activacion" id="ultima">Última: —</div>
+    <div class="stat"><span>Días inactivos:</span> <span id="inactivos">0</span></div>
+
+    <button class="button" id="activarBtn">Activar día ✨</button>
   </div>
-
-  <div class="ultima-activacion" id="ultima">
-    Última: —
-  </div>
-
-  <div class="stat"><span>Días inactivos:</span> <span id="inactivos">0</span></div>
-
-  <button class="button" id="activarBtn">Activar día ✨</button>
-</div>
 
 <script>
-// Cargar estado local
+const ENDPOINT = "/api/guardarDia";
+
+// Estado local
 let racha = parseInt(localStorage.getItem("racha")) || 0;
 let ultimaFecha = localStorage.getItem("ultimaFecha") || null;
 let diasInactivos = parseInt(localStorage.getItem("diasInactivos")) || 0;
@@ -118,19 +113,24 @@ function calcularDiasInactivos() {
 
   let hoy = new Date();
   let ultima = new Date(ultimaFecha);
-
-  let diff = Math.floor((hoy - ultima) / (1000 * 60 * 60 * 24));
+  let diff = Math.floor((hoy - ultima) / (1000*60*60*24));
 
   if (diff > 1) {
     let faltantes = diff - 1;
     diasInactivos += faltantes;
+
+    for (let i = 1; i <= faltantes; i++) {
+      let fechaInactiva = new Date(ultima);
+      fechaInactiva.setDate(ultima.getDate() + i);
+      enviarNotion(fechaInactiva.toISOString().slice(0,10), false);
+    }
   }
 
   localStorage.setItem("diasInactivos", diasInactivos);
   document.getElementById("inactivos").innerText = diasInactivos;
 }
 
-// Botón
+// Botón de activación
 document.getElementById("activarBtn").onclick = () => {
   let hoy = new Date().toISOString().slice(0,10);
   racha++;
@@ -142,11 +142,24 @@ document.getElementById("activarBtn").onclick = () => {
   document.getElementById("rachaDisplay").innerText = `${racha} 🔥`;
   document.getElementById("ultima").innerText = `Última: ${ultimaFecha}`;
 
-  // Temporal: solo prueba, no envía a Notion
-  console.log("Simulación envío a Notion:", hoy, true);
+  enviarNotion(hoy, true);
 };
+
+// Enviar a backend
+async function enviarNotion(fecha, activado) {
+  try {
+    await fetch(ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fecha, activado })
+    });
+  } catch (error) {
+    console.error("Error enviando a Notion:", error);
+  }
+}
 
 calcularDiasInactivos();
 </script>
+
 </body>
 </html>
