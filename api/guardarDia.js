@@ -1,13 +1,12 @@
+// api/guardarDia.js
 import fetch from "node-fetch";
 
 export default async function handler(req, res) {
+  if (req.method !== "POST") return res.status(405).json({ ok: false, error: "Método no permitido" });
+
   try {
-    if (req.method !== "POST") return res.status(405).json({ ok: false });
+    const { fecha, activado } = req.body;
 
-    const body = req.body;
-    if (!body) return res.status(400).json({ ok: false, error: "No se envió ningún body" });
-
-    const { fecha, activado } = body;
     if (!fecha) return res.status(400).json({ ok: false, error: "Falta la propiedad 'fecha'" });
 
     const NOTION_KEY = process.env.NOTION_KEY;
@@ -30,9 +29,9 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-    res.status(200).json({ ok: true, data });
 
-  } catch (error) {
-    res.status(500).json({ ok: false, error: error.message });
+    res.status(200).json({ ok: true, data });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
   }
 }
