@@ -1,132 +1,48 @@
-import fetch from "node-fetch";
-
-export const handler = async (event) => {
-  // --- CABECERAS CORS PARA NOTION / IFRAMES ---
-  const headers = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Content-Type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS"
-  };
-
-  // --- RESPUESTA AL PREFLIGHT ---
-  if (event.httpMethod === "OPTIONS") {
-    return {
-      statusCode: 200,
-      headers,
-      body: "OK"
-    };
-  }
-
-  // --- ASEGURAR QUE SEA POST ---
-  if (event.httpMethod !== "POST") {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({
-        ok: false,
-        error: "Método no permitido, usa POST"
-      })
-    };
-  }
-
-  // --- VALIDAR BODY ---
-  if (!event.body) {
-    return {
-      statusCode: 400,
-      headers,
-      body: JSON.stringify({
-        ok: false,
-        error: "No se envió ningún body"
-      })
-    };
-  }
-
-  let data;
+export default async function handler(req, res) {
   try {
-    data = JSON.parse(event.body);
-  } catch (err) {
-    return {
-      statusCode: 400,
-      headers,
-      body: JSON.stringify({
-        ok: false,
-        error: "JSON inválido enviado al servidor"
-      })
-    };
-  }
+    if (req.method !== "POST") {
+      return res.status(405).json({ ok: false, error: "Método no permitido" });
+    }
 
-  const { fecha, activado } = data;
+    // Evitar error por JSON vacío
+    let body;
+    try {
+      body = req.body;
+    } catch (err) {
+      return res.status(400).json({ ok: false, error: "JSON inválido" });
+    }
 
-  if (!fecha || activado === undefined) {
-    return {
-      statusCode: 400,
-      headers,
-      body: JSON.stringify({
-        ok: false,
-        error: "Faltan datos: se requiere { fecha, activado }"
-      })
-    };
-  }
+    const { fecha, activado } = body;
 
-  // --- TU DATABASE DE NOTION ---
-  const NOTION_DATABASE = "TU_DATABASE_ID";
-  const NOTION_TOKEN = "TU_TOKEN_SECRETO";
+    if (!fecha) {
+      return res.status(400).json({ ok: false, error: "Falta fecha" });
+    }
 
-  // --- INSERTAR EN NOTION ---
-  try {
-    const notionResponse = await fetch("https://api.notion.com/v1/pages", {
+    const NOTION_KEY = process.env.NOTION_KEY;
+    const DATABASE_ID = process.env.DATABASE_ID;
+
+    // Petición a Notion usando fetch nativo
+    const response = await fetch("https://api.notion.com/v1/pages", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${NOTION_TOKEN}`,
+        "Authorization": `Bearer ${NOTION_KEY}`,
         "Notion-Version": "2022-06-28",
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        parent: { database_id: NOTION_DATABASE },
+        parent: { database_id: DATABASE_ID },
         properties: {
-          Fecha: {
-            date: { start: fecha }
-          },
-          Activado: {
-            checkbox: activado
-          }
+          Fecha: { date: { start: fecha } },
+          Activado: { checkbox: activado === true }
         }
       })
     });
 
-    const notionData = await notionResponse.json();
+    const data = await response.json();
 
-    if (!notionResponse.ok) {
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({
-          ok: false,
-          error: "Error en Notion",
-          detail: notionData
-        })
-      };
-    }
+    return res.status(200).json({ ok: true, data });
 
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        ok: true,
-        enviado: data,
-        notion: notionData
-      })
-    };
-
-  } catch (err) {
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({
-        ok: false,
-        error: "Error conectando con Notion",
-        detail: err.message
-      })
-    };
+  } catch (error) {
+    return res.status(500).json({ ok: false, error: error.message });
   }
-};
+}
