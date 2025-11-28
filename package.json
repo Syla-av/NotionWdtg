@@ -1,0 +1,16 @@
+{
+  "name": "notion-widget-cosmico",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "echo 'Static widget, no build step required'",
+    "start": "netlify dev"
+  },
+  "dependencies": {}
+}
