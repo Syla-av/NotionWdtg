@@ -5,11 +5,15 @@
   "description": "Widget espacial con integración a Notion vía Vercel Functions",
   "license": "MIT",
   "type": "module",
-  "engines": { "node": "18.x" },
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
     "dev": "vercel dev",
     "build": "echo 'Widget estático, no se requiere build'",
     "start": "vercel dev"
   },
-  "dependencies": {}
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  }
 }
