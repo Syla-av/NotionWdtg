@@ -1,7 +1,6 @@
 {
   "name": "notion-widget-cosmico",
   "version": "1.0.0",
-  "private": true,
   "description": "Widget espacial con integración a Notion vía Vercel Functions",
   "license": "MIT",
   "type": "module",
